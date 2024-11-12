@@ -1,4 +1,9 @@
-# Technical-references
+# :rocket: Technical References:bookmark_tabs:
+This repository serves as a comprehensive technical resource, providing essential project files and templates, including R scripts, report examples, visualizations, and HTML files
+
+
+
+
 Data Analisys
 
 ![R](https://img.shields.io/badge/r-%23276DC3.svg?style=for-the-badge&logo=r&logoColor=white)
@@ -17,5 +22,4 @@ Reporting
 ![LaTeX](https://img.shields.io/badge/latex-%23008080.svg?style=for-the-badge&logo=latex&logoColor=white)
 ![Microsoft Word](https://img.shields.io/badge/Microsoft_Word-2B579A?style=for-the-badge&logo=microsoft-word&logoColor=white)
 
-This repository serves as a comprehensive technical resource, providing essential project files and templates, including R scripts, report examples, visualizations, and HTML files
 
