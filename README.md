@@ -1,8 +1,9 @@
 # :heavy_check_mark:Technical References
-This repository serves as a comprehensive technical resource, providing essential project files and templates, including R scripts, report examples, visualizations, and HTML files
+This repository serves as a comprehensive technical resource, providing essential project files and templates, including R scripts, report examples, visualizations, and HTML files. Designed to support reproducible research and collaborative projects, it includes sample code, documentation, and resources for efficient data analysis, insights generation, and reporting. Ideal for referencing project-specific methodologies, coding standards, and visualization templates.
 
 
 
+The team possesses strong technical skills, demonstrated by their proficiency across a range of tools for data analysis, web design, and reporting. With expertise in statistical software such as R, Python, Stata, and SPSS, the team is adept at analyzing complex datasets and producing actionable insights. Their experience extends to advanced web design using PHP, HTML, CSS, and JavaScript, enabling them to create interactive and user-friendly web applications for data visualization and dissemination. Additionally, they excel in technical report writing and documentation, using tools like Markdown, LaTeX, and GitHub for collaborative development and version control. This diverse skill set allows the team to handle multifaceted data projects efficiently, from initial analysis and modeling to delivering polished, accessible reports and visualizations.
 
 ### :chart_with_upwards_trend:Data Analisys
 
