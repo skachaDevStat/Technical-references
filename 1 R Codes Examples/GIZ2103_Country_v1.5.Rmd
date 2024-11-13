@@ -1,0 +1,3150 @@
+---
+title: "Tracer Studies: `r i`"
+output:
+   html_document:
+     number_sections: true
+     toc: true
+     theme: simplex
+     toc_float: yes
+     fig_align: "center"
+     css: "styles.css"
+---
+
+```{css, echo=FALSE}
+
+div.main-container {
+  max-width: 1500px;
+}
+
+```
+
+***DevStat - July 23***
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+#Options
+knitr::opts_chunk$set(warning=FALSE)
+options(knitr.table.format = "html") 
+options(knitr.kable.NA = '--')
+
+sample <- country %>% filter(!is.na(UI3)) %>% filter(!is.na(Age)) %>% filter(Gender != "Other") %>% filter(!(F1__4 == 1)) %>% filter(!(VAR00001 %in% not.valid))
+
+```
+
+# General
+
+Number of records: `r nrow(country)`
+
+Number of all NA: `r sum(is.na(country$UI3) & is.na(country$Age))` (REMOVED FROM NOW ON)
+
+Number of Other gender: `r sum(!is.na(country$UI3) & country$Gender == "Other")` (REMOVED FROM NOW ON)
+
+Number of participants have not received any support: `r sum(country$F1__4 == 1)` (REMOVED FROM NOW ON)
+
+Number of Not Valid answers: `r sum(country$VAR00001 %in% not.valid)` (REMOVED FROM NOW ON)
+
+Number of answers: `r nrow(sample)`
+
+## Nationality
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample
+break.vars <- "Nationality"
+
+if(unique(data$Country) == "All"){
+  
+data  <- data %>% mutate(Nationality = plyr::mapvalues(Nationality, c("GH", "IQ", "PK", "NG", "KS", "SB", "GM", "AL", "TN"), c("Ghana", "Iraq", "Pakistan", "Nigeria", "Kosovo", "Servia", "Gambia", "Albania", "Tanzania"))) 
+
+kable(freq.tables.by(data,break.vars) , col.names = c(break.vars,"n","%"), align = c("l", rep("r",3)), format.args = list(decimal.mark = ',', big.mark = ".")) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+
+```
+
+## Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+break.vars <- "Gender"
+
+kable(freq.tables.by(data,break.vars), col.names = c(break.vars,"n","%"), align = c("l", rep("r",3)), format.args = list(decimal.mark = ',', big.mark = ".")) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+# aux <- freq.tables.by(data,break.vars)
+# 
+# ggplot(aux, aes(x = Gender, y = N, fill = Gender) ) +
+#     geom_bar(stat = "identity", position =  position_dodge2(), color = "#a2a2a2", alpha =0.9) + 
+#     geom_text(aes(label = N), vjust = -0.5, color = "#535353", size = 3) + labs(title = "") + ylab("") +
+#     theme_bw() + 
+#     theme(legend.position = "none",
+#           strip.background = element_blank(),
+#           strip.placement = "outside",
+#           plot.title = element_text(hjust = 0.5)) +
+#     scale_fill_manual(values = ccPalette[c(2,4,8)]) 
+
+
+aux <- freq.tables.by(data,break.vars) %>% mutate(P = as.numeric(gsub("%|,", "", P))/1000) %>% select(-N) %>% filter(Gender != "Total")
+names(aux) <- c("category", "fraction")
+
+# Compute the cumulative percentages (top of each rectangle)
+aux$ymax = cumsum(aux$fraction)
+
+# Compute the bottom of each rectangle
+aux$ymin = c(0, head(aux$ymax, n=-1))
+aux$labelPosition <- (aux$ymax + aux$ymin) / 2
+aux$label <- paste0(aux$category, "\n", scales::percent(aux$fraction, accuracy = 0.1, decimal.mark = ","))
+
+# Make the plot
+ggplot(aux, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3)) +
+  geom_rect(aes( fill=category), color = "white") + ylab("")+
+  coord_polar(theta="y") + # Try to remove that to understand how the chart is built initially
+  xlim(c(0, 4)) + 
+  geom_label( x=2, aes(y=labelPosition, label= label), color = "#535353", size=3.5) +
+  theme_bw()+
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        axis.ticks = element_blank(),
+        panel.border = element_blank()) +
+  scale_fill_manual(values = ccPalette[c(2,4)]) +   
+  scale_colour_manual(values=ccPalette[c(2,4)] )
+
+
+```
+
+## Age Groups {.tabset}
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+break.vars <- c("Gender","Age")
+
+```
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+head.byGender(freq.tables.byVar1(data,break.vars),break.vars)
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+head.byGender(freq.tables.byVar1.vertical(data,break.vars),break.vars)
+
+```
+
+##  {.unnumbered .finaltab}
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+viz <- graph(data, break.vars)
+viz[[2]]
+
+```
+
+## Migration Status {.tabset}
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+break.vars <- c("Gender","Migration")
+
+```
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+head.byGender(freq.tables.byVar1(data,break.vars),break.vars)
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+head.byGender(freq.tables.byVar1.vertical(data,break.vars),break.vars)
+
+```
+
+##  {.unnumbered .finaltab}
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+viz <- graph(data, break.vars)
+viz[[2]]
+
+```
+
+## Country returness returned from
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(CountryReturn))
+break.vars <- c("Gender","CountryReturn")
+
+head.byGender(freq.tables.byVar1(data,break.vars),break.vars)
+
+aux <- length(unique(data$CountryReturn))*0.35
+aux2 <- 1/aux
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=aux, fig.width=10}
+
+df <- viz.data(data,break.vars) %>% 
+  filter(unit == "N", var2 == "Total")  %>% 
+  group_by(var1, unit) %>% 
+  summarise(value = sum(value)) %>% 
+  ungroup() %>% 
+  mutate(P = value/ sum(value))
+
+df$var1[df$var1 == "Turkiye"] <- "Turkey"
+df$iso2 <- countrycode(df$var1, "country.name", "iso2c")
+df$continent <- countrycode(df$iso2, "iso2c", "continent")
+# df$var1 <- df$var1[order(df$value)]
+# df$iso2 <- df$iso2[order(df$value)]
+
+oda_bar <- df %>% na.omit() %>% 
+  ggplot(aes(x = reorder(var1, value), y = value)) +
+  geom_flag(y = -max(df$value)*0.04, aes(image = iso2), size = 0.03)  +
+  geom_bar(stat = "identity", color = "#a2a2a2", fill = "#bfd688", alpha = 0.9)+
+  geom_label(aes( label=paste0("  ", value, "  /  ", scales::percent(P, accuracy = .1, decimal.mark = ","))), hjust = -.25, color = "#535353", size = 3.5) +   labs(title = "", subtitle = "", x = "", y = "") +
+  ylim(-max(df$value)*0.045, max(df$value)*1.2)
+
+oda_bar + coord_flip() + theme_bw() +
+    theme(legend.position = "none",
+          axis.text.x =  element_blank(),
+          axis.ticks.x = element_blank(),
+          plot.title = element_text(hjust = 0.5))
+
+```
+
+## Date of return
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(YearReturn))
+break.vars <- c("Gender","YearReturn")
+
+head.byGender(freq.tables.byVar1(data,break.vars),break.vars)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=10}
+
+df <- viz.data(data,break.vars) %>% 
+        spread(unit, value) %>%
+        filter(var2 != "Total") %>% tidyft::complete(var1 = min(data$YearReturn):max(data$YearReturn), var2 =c("Male", "Female"))
+
+df$P[df$var2 == "Total"] <- NA
+
+ggplot(df, aes(x = var1, y = N, group = var2)) +
+  geom_line(aes(color = var2), size = 1.2) +
+  geom_point(aes(color = var2), size = 3) +
+  geom_point(colour="white",  size = 1, stroke = 1) +
+  geom_text(aes(label = scales::percent(P/10, accuracy = 1)), vjust = 1.4, color = "#535353", size=3) +
+  xlab("") + ylab("Number of returnees") +
+  scale_x_continuous(breaks = min(df$var1):max(df$var1)) +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.placement = "outside",
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.minor.x = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        panel.border = element_rect(colour = "#a2a2a2")) +
+  scale_colour_manual(values = ccPalette[c(2,4,8)])  +
+  scale_fill_manual(values = ccPalette[c(2,4,8)])
+
+```
+
+## Organisation supporting the beneficiaries {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+break.vars <- c("Migration","Gender","Organization")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+break.vars <- c("Migration","Gender","Organization")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2.vertical(data,break.vars))
+
+```
+
+##  {.unnumbered .finaltab .unlisted .unnumbered}
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+break.vars <- c("Migration","Gender","Organization")
+
+aux <- viz.data(data,break.vars) 
+aux$position <- aux$value/2
+aux$var1[grepl("Advisory Center &", aux$var1)] <- gsub("Advisory Center &", "Advisory Center\n&", aux$var1[grepl("Advisory Center &", aux$var1)])
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 != "Total") 
+
+bar.plot(df, faced = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width = 6}
+
+df <- aux %>% filter(unit == "N", var3 == "Total", var2 == "Total") %>% group_by(var3) %>% mutate(value = value/ sum(value))
+
+bar.plot(df, 8, perc= T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=8}
+
+df <- aux %>% filter(unit == "N", var3 != "Total", var2 == "Total") %>% group_by(var1, var2) %>% mutate(value = value/ sum(value))
+bar.plot(df,perc = T)
+ 
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select (-var3) %>% rename("var3" = "var2") %>% mutate(var2 = "Total")%>% 
+  group_by(var1) %>% mutate(value = value/ sum(value))
+
+bar.plot(df, c(7,1,3), per= T)
+
+```
+
+# Services received
+
+## Services received {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+
+myvars <- colnames(data)[grepl("F2_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+
+myvars <- colnames(data)[grepl("F2_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  break.vars <- c("Migration","Gender","myvar")
+  
+  aux2 <- freq.tables.byVar1and2.vertical(data,break.vars) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+df <- aux
+head.freq.byMigrationandGender(aux)
+
+```
+
+##  {.unnumbered .finaltab .unlisted .unnumbered}
+
+```{r, echo = F, warning = FALSE, message = FALSE,fig.height=9, fig.width=10}
+
+circular.barplot(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,fig.height=9, fig.width=10}
+
+aux <- viz.data2(df) %>% mutate(var1 = gsub("F2_", "", var1),
+                     var1 = plyr::mapvalues(var1, c("guidance", "stskills", "ltskills", "counseling", 
+                                                    "coaching", "startup", "reintegration", "pss", "other"), 
+                                            c("Career guidance", "Short-term skills training", 
+                                              "Long-term vocational and\ntechnical skills training", 
+                                              "Individual counseling", "Coaching or training\nduring a job fair", 
+                                              "Support for the\n establishment of a\nstart-up or entrepreneurship", 
+                                              "Reintegration support", "Psychosocial\nsupport measures", "Other support")))
+
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=8}
+
+df <- aux %>% filter(unit == "P", var2 == "Total", var3 == "Total") %>% mutate(value = value /10)
+bar.plot(df, 8, perc = T, flip = T)
+
+```
+
+## Average number of services received
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+
+myvars <- colnames(data)[grepl("F2_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(key,value,myvars) %>% 
+        group_by_at(c("VAR00001",break.vars)) %>% 
+        summarise(F2 = sum(value))  
+
+aux <- data %>% group_by_at(break.vars) %>% summarise(N = sum(!is.na(F2)) , P = mean(F2, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% mutate(Var = "Services received") %>% relocate(Var)
+
+head.mean.byMigrationandGender(aux)
+
+```
+
+##  {.unnumbered .finaltab .unlisted .unnumbered}
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height= 3.5}
+
+ df <- aux %>% 
+    gather("var2",  "value", -1) %>% 
+    mutate(var3 = trimws(str_extract(var2, " Male| Female| Total"), which = "both"),
+           unit = str_extract(var2,"N.*"),
+           unit = ifelse(is.na(unit), "P", unit),
+           var2 = trimws(gsub("Male P|Female P|Total P|Male N|Female N|Total N", "", var2), which = "both" ),
+           var2 = plyr::mapvalues(var2, c("Local Population", "Migrants from GER", "Migrants from third countries"),  c("Local \nPopulation", "Migrants \nfrom GER", "Migrants from \nthird countries"))) %>% 
+    relocate(unit, .before = value) %>% 
+    relocate(var3, .after = var2) %>% rename(var1 = Var) 
+
+
+aux <- df
+
+df <- aux %>% filter(unit == "P", var2 == "Total")
+
+ggplot(df, aes(x=value, y=var3)) +
+  geom_segment( aes(x=0, xend=value, y=var3, yend=var3, colour = ccPalette[c(2,4, 8)]), size =8, alpha = 0.7, position = position_dodge(2)) +  scale_color_identity(aesthetics = "colour") +
+  geom_point( size=20, color=alpha("#535353",.2), aes(fill= var3), shape=21, stroke=2) + 
+  geom_text(aes(x = value, label = formatC( round(value, 1),decimal.mark = ",")), color = "#ffffff", size = 4) +
+  ylab("") + xlab("") +
+  theme_bw() + 
+  theme(legend.position = "none",
+        panel.grid.minor.x = element_blank(),
+        strip.background = element_blank(),
+        strip.placement = "outside",
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(values = ccPalette[c(2,4,8)]) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0,6)) 
+
+
+```
+
+## Rating of services received
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+
+myvars <- colnames(data)[grepl("F2_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+data2 <- data %>% filter(Migration == "Total", Gender == "Total") %>% group_by(Service) %>% mutate(total = n())
+
+aux <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars))) 
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) 
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8}
+
+df <- aux %>% filter(!is.na(Service)) %>% 
+    gather("var2",  "value", -1) %>% 
+    mutate(var3 = trimws(str_extract(var2, " Male| Female| Total"), which = "both"),
+           unit = str_extract(var2,"N.*"),
+           unit = ifelse(is.na(unit), "P", unit),
+           var2 = trimws(gsub("Male P|Female P|Total P|Male N|Female N|Total N", "", var2), which = "both" ),
+           var2 = plyr::mapvalues(var2, c("Local Population", "Migrants from GER", "Migrants from third countries"),  c("Local \nPopulation", "Migrants \nfrom GER", "Migrants from \nthird countries")),
+           Service =  str_to_sentence(str_sub(Service, 4, nchar(Service)-5))) %>% 
+    relocate(unit, .before = value) %>% 
+    relocate(var3, .after = var2) %>% 
+    filter(unit == "P") %>% select(-unit) 
+  
+names(df) <- c("var1", "var2", "var3", "value")
+
+color_scale <- c('1 - 2' = '#ff8c5a',  '2 - 3' = '#ffb234', '3 - 4' = '#ffd934', '4 - 5' = '#add633', '5 - 6' = '#a0c15a')
+
+df$grad <- cut(df$value, breaks = c(1, 2, 3, 4, 5, 6), 
+                 labels = c("1 - 2", "2 - 3", "3 - 4", "4 - 5", "5 - 6"), include.lowest = TRUE)
+df$grad <- factor(df$grad, levels = c("1 - 2", "2 - 3", "3 - 4", "4 - 5", "5 - 6"))
+
+ggplot(df, aes(y = var1, x = var3, fill = grad) ) + 
+    geom_tile(color = "#a2a2a2", width = 0.7, height = 0.7) + 
+    ggplot2::annotate("rect", xmin = 2.5, xmax = 3.5, ymin = 0.5 , ymax = length(unique(df$var1)) + 0.5,  fill = "#dddddd")  + 
+    geom_tile(color = "#a2a2a2", width = 0.7, height = 0.7) + 
+    scale_fill_manual(values = color_scale, drop = F) +  
+    facet_grid(.~var2,  scales = "free_x", space = "free_x") +
+    geom_text(aes(label = formatC( round(value, 1),decimal.mark = ",")),  color = "white", size = 4) + labs(title = "") + ylab("") + xlab("") +
+    theme_bw() + 
+    theme(legend.title = element_blank(),
+          # axis.text.x =  element_text(angle = 90, hjust = 1, vjust = 0.5),
+          #axis.text.x =  element_blank(),
+          axis.text.x = element_text(face = c('plain', 'plain', 'bold'), size = c(8,8,10)),  
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample
+
+myvars <- colnames(data)[grepl("F2_",colnames(data)) & grepl("_rate",colnames(data))]
+
+aux3 <- NULL
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("### Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  df <- data
+  df$myvar <- df[,j]
+  
+  aux2 <- df %>% group_by(myvar) %>% summarise(N = n()) %>% filter(!is.na(myvar)) %>% 
+            mutate(Service = j, P = N/sum(N), M = sum(myvar*N)/sum(N)) %>% select(Service, myvar, N, P, M)
+  
+  aux3 <- rbind(aux3,aux2)
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+
+  cat("\n")
+  
+}
+
+```
+
+### Rating of services received: Graph
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+
+df <- aux3 %>% rename(value = myvar)
+
+df <- df %>% mutate(Service = str_to_sentence(gsub("F2_|_rate","",Service)),
+                    Service = plyr::mapvalues(Service, c("Guidance", "Stskills", "Ltskills", "Counseling", "Coaching",
+                                                         "Startup", "Reintegration", "Pss", "Other"), 
+                                              c("Career guidance", "Short-term skills training", 
+                                                "Long-term vocational and\ntechnical skills training",
+                                                "Individual counseling", "Coaching or training\nduring a job fair", 
+                                                "Support for the\nestablishment of a\nstart-up or entrepreneurship", 
+                                                "Reintegration support",
+                                                "Psychosocial\nsupport measures", "Other support")))  
+df$M_norm <- df$M/6
+
+color_scale <- c("#129147", "#7EBB45", "#FDCB09", "#F58E20", "#EF4824", "#BC2029")
+
+df$grad <- factor(df$value, levels = 6:1)
+
+df$P2 <- ifelse(df$P < 0.045, NA, df$P)
+
+df$Service <- factor(df$Service, levels = rev(c("Career guidance", "Short-term skills training", 
+                                                "Long-term vocational and\ntechnical skills training",
+                                                "Individual counseling", "Coaching or training\nduring a job fair", 
+                                                "Support for the\nestablishment of a\nstart-up or entrepreneurship", 
+                                                "Reintegration support",
+                                                "Psychosocial\nsupport measures", "Other support")))
+
+
+ggplot(df, aes(y = P, x = (Service), fill = grad) ) + 
+    geom_bar(stat = "identity", width = 0.5, colour = "#a2a2a2", alpha = 0.8) +
+    geom_text(aes(label = scales::percent(P2, accuracy = 1)), 
+              position = position_stack(0.5), vjust = 0.5, hjust = 0.5, size = 3, color="#535353")+
+    geom_errorbar(aes(ymax = M_norm, ymin = M_norm),lwd = 2, color = "#535353")+
+    geom_label(aes(y = M_norm, label =formatC( round(M, 1), decimal.mark = ",")), 
+               vjust = 0.5, fill= "#535353", color ="white", fontface = "bold")+
+    theme_bw() + coord_flip() +
+    scale_fill_manual(values = color_scale, labels = c('6 Excellent', '5', '4', '3', '2', '1 Not good at all')) +
+    xlab("") + ylab("") +
+    theme(legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+## Explanations for low ratings
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample
+
+myvars <- colnames(data)[grepl("F3_",colnames(data)) & grepl("_lr",colnames(data))]
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("### Low ratings explanations: ",  j)
+  cat("\n")
+  
+  aux <- data[,j]
+  aux <- aux[!is.na(aux)]
+  aux <- aux[nchar(aux)>1]
+  
+  aux2 <- data %>% 
+     group_by_at(break.vars) %>% 
+     summarise(n = n()) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  if(length(aux) > 0){
+    if(length(aux) > 5){
+      get_worldcloud(aux, "english")
+    }
+
+    kbl(aux2) %>% 
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>% 
+      htmltools::HTML() %>% 
+      print
+    
+  } else {
+    print("No data")
+  }
+
+  cat("\n")
+  
+}
+
+```
+
+# M2 MHPSS measures
+
+## Average number of beneficaries who received psychosocial support
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample
+data$PSS_Service <- ifelse(data$F2_reintegration == 1 & data$F2_pss == 1,"F2_reintegration & F2_pss",
+                      ifelse(data$F2_reintegration == 1 & data$F2_pss == 0,"F2_reintegration", 
+                          ifelse(data$F2_reintegration == 0 & data$F2_pss == 1,"F2_pss","None")))
+
+break.vars <- c("Migration","Gender","PSS_Service")
+aux <- freq.tables.byVar1and2(data,break.vars)
+aux <- aux %>% ungroup() %>% filter(PSS_Service != "None")
+aux2 <- aux
+
+data <- sample %>% filter(F2_reintegration == 1 | F2_pss == 1)
+data$PSS_Service <- "Total"
+break.vars <- c("Migration","Gender","PSS_Service")
+aux <- freq.tables.byVar1and2(data,break.vars)
+aux <- aux %>% ungroup()
+
+aux2 <- rbind(aux2,aux) %>% rename(Service = PSS_Service)
+
+if(nrow(aux2) > 0){
+  head.freq.byMigrationandGender(aux2)
+} else {
+  print("No data")
+}
+
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,fig.height=9, fig.width=10}
+df <- aux2 %>% 
+    gather("var2",  "value", -1) %>% 
+    mutate(var3 = trimws(str_extract(var2, " Male| Female| Total"), which = "both"),
+           unit = str_extract(var2,"N.*"),
+           unit = ifelse(is.na(unit), "P", unit),
+           var2 = trimws(gsub("Male P|Female P|Total P|Male N|Female N|Total N", "", var2), which = "both" ),
+           var2 = plyr::mapvalues(var2, c("Local Population", "Migrants from GER", "Migrants from third countries"),  
+                                        c("Local \nPopulation", "Migrants \nfrom GER", "Migrants from \nthird countries")),
+           value = as.numeric(gsub("%|,", "", value)),
+           value = ifelse(unit == "P", value/100, value),
+           Service =  str_sub(Service, 4, nchar(Service)))%>% 
+    relocate(unit, .before = value) %>% 
+    relocate(var3, .after = var2) %>% rename(var1 = Service)
+
+aux <- df
+aux$var1[aux$var1 == "al"] <- "Total"
+aux$var1[aux$var1 == "reintegration & F2_pss"] <- "Reintegration\n & Pss"
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=3}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total", var1 != "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width = 4}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total", var1 != "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, perc = T)
+
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width = 5}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total", var1 != "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, c(7,1,3), perc = T)
+
+```
+
+## Psychosocial situation BEFORE receiving MHPSS measures
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0, !is.na(MHPSS_improve))
+
+break.vars <- c("Migration","Gender","Q3_1")
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 1 & F2_pss == 0),break.vars)
+aux$Service <- "F2_reintegration"
+aux2 <- aux %>% unite(variable,c("Service","Q3_1"), sep = " - ") %>% ungroup()
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 0 & F2_pss == 1),break.vars)
+aux$Service <- "F2_pss"
+aux <- aux %>% unite(variable,c("Service","Q3_1"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 1 & F2_pss == 1),break.vars)
+aux$Service <- "F2_reintegration & F2_pss"
+aux <- aux %>% unite(variable,c("Service","Q3_1"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2(data,break.vars)
+aux$Service <- "Total"
+aux <- aux %>% unite(variable,c("Service","Q3_1"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux) %>% relocate(variable)
+
+head.freq.byMigrationandGender(aux2)
+
+```
+
+## Psychosocial situation AFTER receiving MHPSS measures
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0, !is.na(MHPSS_improve))
+
+break.vars <- c("Migration","Gender","Q3_2")
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 1 & F2_pss == 0),break.vars)
+aux$Service <- "F2_reintegration"
+aux2 <- aux %>% unite(variable,c("Service","Q3_2"), sep = " - ") %>% ungroup()
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 0 & F2_pss == 1),break.vars)
+aux$Service <- "F2_pss"
+aux <- aux %>% unite(variable,c("Service","Q3_2"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 1 & F2_pss == 1),break.vars)
+aux$Service <- "F2_reintegration & F2_pss"
+aux <- aux %>% unite(variable,c("Service","Q3_2"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2(data,break.vars)
+aux$Service <- "Total"
+aux <- aux %>% unite(variable,c("Service","Q3_2"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux) %>% relocate(variable)
+
+head.freq.byMigrationandGender(aux2)
+
+```
+
+## Beneficiaries by if MHPSS measures improved/equal/get worse its psychosocial situation {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0, !is.na(MHPSS_improve))
+
+break.vars <- c("Migration","Gender","MHPSS_improve")
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 1 & F2_pss == 0),break.vars)
+aux$Service <- "F2_reintegration"
+aux2 <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 0 & F2_pss == 1),break.vars)
+aux$Service <- "F2_pss"
+aux <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2(data %>% filter(F2_reintegration == 1 & F2_pss == 1),break.vars)
+aux$Service <- "F2_reintegration & F2_pss"
+aux <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2(data,break.vars)
+aux$Service <- "Total"
+aux <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux) %>% relocate(variable)
+
+head.freq.byMigrationandGender(aux2)
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0, !is.na(MHPSS_improve))
+
+break.vars <- c("Migration","Gender","MHPSS_improve")
+
+aux <- freq.tables.byVar1and2.vertical(data %>% filter(F2_reintegration == 1 & F2_pss == 0),break.vars)
+aux$Service <- "F2_reintegration"
+aux2 <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+
+aux <- freq.tables.byVar1and2.vertical(data %>% filter(F2_reintegration == 0 & F2_pss == 1),break.vars)
+aux$Service <- "F2_pss"
+aux <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2.vertical(data %>% filter(F2_reintegration == 1 & F2_pss == 1),break.vars)
+aux$Service <- "F2_reintegration & F2_pss"
+aux <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux)
+
+aux <- freq.tables.byVar1and2.vertical(data,break.vars)
+aux$Service <- "Total"
+aux <- aux %>% unite(variable,c("Service","MHPSS_improve"), sep = " - ") %>% ungroup()
+aux2 <- rbind(aux2,aux) %>% relocate(variable)
+
+head.freq.byMigrationandGender(aux2)
+
+```
+
+### Check
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0, !is.na(MHPSS_improve))
+
+break.vars <- c("Q3_1","Q3_2")
+
+aux <- data %>% group_by_at(break.vars) %>% summarise(N = n()) %>% ungroup() %>% 
+           mutate(Q3_1 = factor(Q3_1, levels = 1:6), Q3_2 = factor(Q3_2, levels = 1:6)) %>% 
+           complete(Q3_1,Q3_2) %>% spread(Q3_2, N, sep = "_")
+
+aux <- aux %>%  ungroup() %>% mutate_all(as.numeric)
+aux <- as.data.frame(aux)
+
+for (i in 1:6) {
+  aux[i, i+1] <- cell_spec(aux[i, i+1], "html", bold=T, background = "red", color = "white")
+}
+
+kbl(aux, escape = F, format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+### Test of Statistical Significance
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+if(unique(sample$Country)[1] == "All"){
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0, !is.na(MHPSS_improve)) %>% 
+  mutate(Service = ifelse(F2_reintegration + F2_pss == 2, "Both", ifelse(F2_reintegration == 1, "Reintegration", "PSS")))
+
+break.vars <- c("Migration","Gender")
+
+data <- data %>% select(c("MHPSS_improve_points",break.vars)) %>% mutate_at(vars(-("MHPSS_improve_points")),as.factor)
+
+mymodel <- aov(MHPSS_improve_points ~ ., data = data)
+print(summary(mymodel))
+print(TukeyHSD(mymodel))
+
+} else {
+  print("Only available for all countries")
+}
+
+```
+
+## Beneficaries whose psychosocial situation has improved at least by one point
+
+### Average points of improvement of psychosocial situation
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points > 0)                     
+
+break.vars <- c("Migration","Gender")
+
+aux1 <- data %>% group_by_at(c(break.vars)) %>% summarise(N = sum(!is.na(MHPSS_improve_points)), P = mean(MHPSS_improve_points, na.rm = T)) %>% ungroup()
+aux2 <- data %>% group_by_at(break.vars[1]) %>% summarise(N = sum(!is.na(MHPSS_improve_points)), P = mean(MHPSS_improve_points, na.rm = T)) %>% ungroup()
+aux2[,break.vars[2]] <- "Total"
+aux3 <- data %>% group_by_at(break.vars[2]) %>% summarise(N = sum(!is.na(MHPSS_improve_points)), P = mean(MHPSS_improve_points, na.rm = T)) %>% ungroup()
+aux3[,break.vars[1]] <- "Total"
+aux4 <- data %>% ungroup() %>% summarise(N = sum(!is.na(MHPSS_improve_points)), P = mean(MHPSS_improve_points, na.rm = T)) %>% ungroup()
+aux4[,break.vars[2]] <- "Total"
+aux4[,break.vars[1]] <- "Total"
+
+aux <- aux1 %>% rbind(aux2) %>% rbind(aux3) %>% rbind(aux4)
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% mutate(Service = "Points of improvement") %>% relocate(Service)
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+
+head.mean.byMigrationandGender(aux)
+
+```
+
+### Improved: Ways how support has helped {.tabset}
+
+#### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points > 0)         
+
+myvars <- colnames(data)[grepl("Q3_3_",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Statament <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Statament)
+
+aux2 <- data.frame(Statament = paste0("Q3_3_statements__",1:8), 
+                   Service = c("It helped me to regain confidence\n and a sense of empowerment",
+                               "It helped me to better integrate\n into my community",
+                               "It helped my children to better\n integrate into our community",
+                               "It helped me manage\n stress and / or trauma",
+                               "It helped to prepare me for my\n successful entry into the labor market",
+                               "It helped me to\n find a permanent accommodation",
+                               "It helped me to\n manage bureaucracy",
+                               "Other"))
+
+aux <- aux %>% left_join(aux2) %>% select(-Statament) %>% relocate(Service) 
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+#### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points > 0)         
+
+myvars <- colnames(data)[grepl("Q3_3_",colnames(data))]
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  break.vars <- c("Migration","Gender","myvar")
+  
+  aux2 <- freq.tables.byVar1and2.vertical(data,break.vars) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Statament <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Statament)
+
+aux2 <- data.frame(Statament = paste0("Q3_3_statements__",1:8), 
+                   Service = c("It helped me to regain confidence\n and a sense of empowerment",
+                               "It helped me to better integrate\n into my community",
+                               "It helped my children to better\n integrate into our community",
+                               "It helped me manage\n stress and / or trauma",
+                               "It helped to prepare me for my\n successful entry into the labor market",
+                               "It helped me to\n find a permanent accommodation",
+                               "It helped me to\n manage bureaucracy",
+                               "Other"))
+
+aux <- aux %>% left_join(aux2) %>% select(-Statament) %>% relocate(Service) 
+
+aux01 <- aux
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+#### Test of Statistical Significance
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+if(unique(sample$Country)[1] == "All"){
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points > 0)         
+
+myvars <- colnames(data)[grepl("Q3_3_",colnames(data))]
+break.vars <- c("Migration","Gender")
+
+data <- data %>% select(c("MHPSS_improve_points",break.vars, myvars)) %>% mutate_at(vars(-("MHPSS_improve_points")),as.factor)
+
+mymodel <- aov(MHPSS_improve_points ~ ., data = data)
+print(summary(mymodel))
+print(TukeyHSD(mymodel))
+
+} else {
+  print("Only available for all countries")
+}
+
+```
+
+###  {.unnumbered .finaltab .unlisted .unnumbered}
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+aux <- viz.data2(aux01) 
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "P", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/10) %>% arrange(desc(value))
+bar.plot(df, 8, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "N", var3 != "Total", var2 == "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, flip = T, perc = T)
+ 
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "N", var3 == "Total", var2 != "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, c(7,1,3), flip = T, perc = T)
+
+```
+
+### Improved: Rating of psychosocial support
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points > 0)       
+  
+myvars <- colnames(data)[grepl("Q3_4_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+data <- data %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux01 <- data
+  
+aux1 <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2 <- data %>% group_by_at(c(break.vars[1],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2[,break.vars[2]] <- "Total"
+aux3 <- data %>% group_by_at(c(break.vars[2],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux3[,break.vars[1]] <- "Total"
+aux4 <- data %>% group_by_at("Service") %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux4[,break.vars[2]] <- "Total"
+aux4[,break.vars[1]] <- "Total"
+
+aux <- aux1 %>% rbind(aux2) %>% rbind(aux3) %>% rbind(aux4)
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+
+df <- aux01 %>% 
+        group_by(value, Service) %>% 
+        summarize(N = n()) %>% 
+        ungroup() %>% 
+        group_by(Service)  %>% 
+        filter(!is.na(value)) %>%
+        mutate(M = sum(value*N)/sum(N),
+               P = N/sum(N),
+               Service = str_to_sentence(gsub("[0-9]|rate","",Service)),
+               Service = str_sub(Service, 5, nchar(Service)),
+               Service = str_to_sentence(gsub("_"," ",Service)),
+                Service = str_trim(Service, "right"))
+
+df$M_norm <- df$M/6
+
+color_scale <- c("#129147", "#7EBB45", "#FDCB09", "#F58E20", "#EF4824", "#BC2029")
+
+df$grad <- factor(df$value, levels = 6:1)
+
+df$P2 <- ifelse(df$P < 0.045, NA, df$P)
+
+df$Service <- plyr::mapvalues(df$Service, c("Hc counseling", "Medical", "Therapy", "Accomodation", "Labour", "Language", "Education", "Childcare", "Parenting", "Legal", "Other"), 
+                                              c("Healthcare Counseling","Medical Service","Group Therapy","Accomodation","Labour Market","Language Course",
+                                                "Basic Education","Childcare","Parenting Courses","Legal","Other PSS"))
+
+df$Service <- factor(df$Service, levels = rev(c("Healthcare Counseling","Medical Service","Group Therapy","Accomodation","Labour Market","Language Course",
+                                                "Basic Education","Childcare","Parenting Courses","Legal","Other PSS")))
+
+
+ggplot(df, aes(y = P, x = (Service), fill = grad) ) + 
+    geom_bar(stat = "identity", width = 0.5, colour = "#a2a2a2", alpha = 0.8) +
+    geom_text(aes(label = scales::percent(P2, accuracy = 1)), 
+              position = position_stack(0.5), vjust = 0.5, hjust = 0.5, size = 3, color="#535353")+
+    geom_errorbar(aes(ymax = M_norm, ymin = M_norm),lwd = 2, color = "#535353")+
+    geom_label(aes(y = M_norm, label =formatC( round(M, 1), decimal.mark = ",")), 
+               vjust = 0.5, fill= "#535353", color ="white", fontface = "bold")+
+    theme_bw() + coord_flip() +
+    scale_fill_manual(values = color_scale, labels = c('6 Extremly helpful', '5', '4', '3', '2', '1 Not helpfull at all')) +
+    xlab("") + ylab("") +
+    theme(legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points > 0)       
+
+myvars <- colnames(data)[grepl("Q3_4_",colnames(data)) & grepl("_rate",colnames(data))]
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("#### Improve - Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+  
+  cat("\n")
+  
+}
+
+```
+
+## Beneficaries whose psychosocial situation is equal
+
+### Equal: Rating of psychosocial support
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points == 0)       
+  
+myvars <- colnames(data)[grepl("Q3_4_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+data <- data %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux01 <- data
+
+aux1 <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2 <- data %>% group_by_at(c(break.vars[1],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2[,break.vars[2]] <- "Total"
+aux3 <- data %>% group_by_at(c(break.vars[2],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux3[,break.vars[1]] <- "Total"
+aux4 <- data %>% group_by_at("Service") %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux4[,break.vars[2]] <- "Total"
+aux4[,break.vars[1]] <- "Total"
+
+aux <- aux1 %>% rbind(aux2) %>% rbind(aux3) %>% rbind(aux4)
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+
+df <- aux01 %>% 
+    group_by(value, Service) %>% 
+    summarize(N = n()) %>% 
+    ungroup() %>% 
+    group_by(Service)  %>% 
+    filter(!is.na(value)) %>%
+    mutate(M = sum(value*N)/sum(N),
+           P = N/sum(N),
+           Service = str_to_sentence(gsub("[0-9]|rate","",Service)),
+           Service = str_sub(Service, 5, nchar(Service)),
+           Service = str_to_sentence(gsub("_"," ",Service)),
+           Service = str_trim(Service, "right"))
+
+df$M_norm <- df$M/6
+
+color_scale <- c("#129147", "#7EBB45", "#FDCB09", "#F58E20", "#EF4824", "#BC2029")
+
+df$grad <- factor(df$value, levels = 6:1)
+
+df$P2 <- ifelse(df$P < 0.045, NA, df$P)
+
+df$Service <- plyr::mapvalues(df$Service, c("Hc counseling", "Medical", "Therapy", "Accomodation", "Labour", "Language", "Education", "Childcare", "Parenting", "Legal", "Other"), 
+                                              c("Healthcare Counseling","Medical Service","Group Therapy","Accomodation","Labour Market","Language Course",
+                                                "Basic Education","Childcare","Parenting Courses","Legal","Other PSS"))
+
+df$Service <- factor(df$Service, levels = rev(c("Healthcare Counseling","Medical Service","Group Therapy","Accomodation","Labour Market","Language Course",
+                                                "Basic Education","Childcare","Parenting Courses","Legal","Other PSS")))
+
+ggplot(df, aes(y = P, x = (Service), fill = grad) ) + 
+    geom_bar(stat = "identity", width = 0.5, colour = "#a2a2a2", alpha = 0.8) +
+    geom_text(aes(label = scales::percent(P2, accuracy = 1)), 
+              position = position_stack(0.5), vjust = 0.5, hjust = 0.5, size = 3, color="#535353")+
+    geom_errorbar(aes(ymax = M_norm, ymin = M_norm),lwd = 2, color = "#535353")+
+    geom_label(aes(y = M_norm, label =formatC( round(M, 1), decimal.mark = ",")), 
+               vjust = 0.5, fill= "#535353", color ="white", fontface = "bold")+
+    theme_bw() + coord_flip() +
+    scale_fill_manual(values = color_scale, labels = c('6 Extremly helpful', '5', '4', '3', '2', '1 Not helpfull at all')) +
+    xlab("") + ylab("") +
+    theme(legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points == 0)       
+
+myvars <- colnames(data)[grepl("Q3_4_",colnames(data)) & grepl("_rate",colnames(data))]
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("#### Equal - Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+  
+  cat("\n")
+  
+}
+
+```
+
+## Beneficaries whose psychosocial situation get worse
+
+### Get worse: Rating of psychosocial support
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points < 0)       
+  
+myvars <- colnames(data)[grepl("Q3_4_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+data <- data %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux01 <- data
+
+aux1 <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2 <- data %>% group_by_at(c(break.vars[1],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2[,break.vars[2]] <- "Total"
+aux3 <- data %>% group_by_at(c(break.vars[2],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux3[,break.vars[1]] <- "Total"
+aux4 <- data %>% group_by_at("Service") %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux4[,break.vars[2]] <- "Total"
+aux4[,break.vars[1]] <- "Total"
+
+aux <- aux1 %>% rbind(aux2) %>% rbind(aux3) %>% rbind(aux4)
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+
+df <- aux01 %>% 
+    group_by(value, Service) %>% 
+    summarize(N = n()) %>% 
+    ungroup() %>% 
+    group_by(Service)  %>% 
+    filter(!is.na(value)) %>%
+    mutate(M = sum(value*N)/sum(N),
+           P = N/sum(N),
+           Service = str_to_sentence(gsub("[0-9]|rate","",Service)),
+           Service = str_sub(Service, 5, nchar(Service)),
+           Service = str_to_sentence(gsub("_"," ",Service)),
+           Service = str_trim(Service, "right"))
+
+df$M_norm <- df$M/6
+
+color_scale <- c("#129147", "#7EBB45", "#FDCB09", "#F58E20", "#EF4824", "#BC2029")
+
+df$grad <- factor(df$value, levels = 6:1)
+
+df$P2 <- ifelse(df$P < 0.045, NA, df$P)
+
+df$Service <- plyr::mapvalues(df$Service, c("Hc counseling", "Medical", "Therapy", "Accomodation", "Labour", "Language", "Education", "Childcare", "Parenting", "Legal", "Other"), 
+                                              c("Healthcare Counseling","Medical Service","Group Therapy","Accomodation","Labour Market","Language Course",
+                                                "Basic Education","Childcare","Parenting Courses","Legal","Other PSS"))
+
+df$Service <- factor(df$Service, levels = rev(c("Healthcare Counseling","Medical Service","Group Therapy","Accomodation","Labour Market","Language Course",
+                                                "Basic Education","Childcare","Parenting Courses","Legal","Other PSS")))
+
+ggplot(df, aes(y = P, x = (Service), fill = grad) ) + 
+    geom_bar(stat = "identity", width = 0.5, colour = "#a2a2a2", alpha = 0.8) +
+    geom_text(aes(label = scales::percent(P2, accuracy = 1)), 
+              position = position_stack(0.5), vjust = 0.5, hjust = 0.5, size = 3, color="#535353")+
+    geom_errorbar(aes(ymax = M_norm, ymin = M_norm),lwd = 2, color = "#535353")+
+    geom_label(aes(y = M_norm, label =formatC( round(M, 1), decimal.mark = ",")), 
+               vjust = 0.5, fill= "#535353", color ="white", fontface = "bold")+
+    theme_bw() + coord_flip() +
+    scale_fill_manual(values = color_scale, labels = c('6 Extremly helpful', '5', '4', '3', '2', '1 Not helpfull at all')) +
+    xlab("") + ylab("") +
+    theme(legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(F2_reintegration + F2_pss > 0 & MHPSS_improve_points < 0)       
+
+myvars <- colnames(data)[grepl("Q3_4_",colnames(data)) & grepl("_rate",colnames(data))]
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("#### Get worse: Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+  
+  cat("\n")
+  
+}
+
+```
+
+# M3 Employment
+
+## Beneficiaries who are working
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q1_11))
+
+break.vars <- c("Migration","Gender","Q1_11")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,fig.height=9, fig.width=10}
+
+aux <- viz.data(data, break.vars) %>% mutate(var1 = plyr::mapvalues(var1, c(0,1), c("No", "Yes")))
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=2}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=3}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=4}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, c(7,1,3), perc = T)
+
+```
+
+## Beneficiaries who are working with breakdown by measures that had an effect
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1)
+
+break.vars <- c("Migration","Gender","Q1_12")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+
+```
+
+#### Test of Statistical Significance
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+if(unique(sample$Country)[1] == "All"){
+
+data <- sample %>% filter(Q1_11 == 1)
+
+print("Migration Status")
+print(CrossTable(data$Migration, data$Q1_12, chisq = TRUE, format = "SPSS"))
+
+print("Gender")
+print(CrossTable(data$Gender, data$Q1_12, chisq = TRUE, format = "SPSS"))
+
+} else {
+  print("Only available for all countries")
+}
+
+```
+
+## Measures that had an effect
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1) 
+  
+myvars <- colnames(data)[grepl("Q1_13_",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+data <- data %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux1 <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2 <- data %>% group_by_at(c(break.vars[1],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux2[,break.vars[2]] <- "Total"
+aux3 <- data %>% group_by_at(c(break.vars[2],"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux3[,break.vars[1]] <- "Total"
+aux4 <- data %>% group_by_at("Service") %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux4[,break.vars[2]] <- "Total"
+aux4[,break.vars[1]] <- "Total"
+
+aux <- aux1 %>% rbind(aux2) %>% rbind(aux3) %>% rbind(aux4)
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8}
+
+df <- aux %>% filter(!is.na(Service)) %>% 
+    gather("var2",  "value", -1) %>% 
+    mutate(var3 = trimws(str_extract(var2, " Male| Female| Total"), which = "both"),
+           unit = str_extract(var2,"N.*"),
+           unit = ifelse(is.na(unit), "P", unit),
+           var2 = trimws(gsub("Male P|Female P|Total P|Male N|Female N|Total N", "", var2), which = "both" ),
+           var2 = plyr::mapvalues(var2, c("Local Population", "Migrants from GER", "Migrants from third countries"),  c("Local \nPopulation", "Migrants \nfrom GER", "Migrants from \nthird countries")),
+           Service =  str_to_sentence(gsub("Q1_13_", "",Service))) %>% 
+    relocate(unit, .before = value) %>% 
+    relocate(var3, .after = var2) %>% 
+    filter(unit == "P") %>% select(-unit) 
+  
+names(df) <- c("var1", "var2", "var3", "value")
+
+color_scale <- c('1 - 2' = '#ff8c5a',  '2 - 3' = '#ffb234', '3 - 4' = '#ffd934', '4 - 5' = '#add633', '5 - 6' = '#a0c15a')
+
+df$grad <- cut(df$value, breaks = c(1, 2, 3, 4, 5, 6), 
+                 labels = c("1 - 2", "2 - 3", "3 - 4", "4 - 5", "5 - 6"), include.lowest = TRUE)
+df$grad <- factor(df$grad, levels = c("1 - 2", "2 - 3", "3 - 4", "4 - 5", "5 - 6"))
+
+ggplot(df, aes(y = var1, x = var3, fill = grad) ) + 
+    geom_tile(color = "#a2a2a2", width = 0.7, height = 0.7) + 
+    ggplot2::annotate("rect", xmin = 2.5, xmax = 3.5, ymin = 0.5 , ymax = length(unique(df$var1)) + 0.5,  fill = "#dddddd")  + 
+    geom_tile(color = "#a2a2a2", width = 0.7, height = 0.7) + 
+    scale_fill_manual(values = color_scale, drop = F) +  
+    facet_grid(.~var2,  scales = "free_x", space = "free_x") +
+    geom_text(aes(label = formatC( round(value, 1), decimal.mark = ",")),  color = "white", size = 4) + labs(title = "") + ylab("") + xlab("") +
+    theme_bw() + 
+    theme(legend.title = element_blank(),
+          # axis.text.x =  element_text(angle = 90, hjust = 1, vjust = 0.5),
+          #axis.text.x =  element_blank(),
+          axis.text.x = element_text(face = c('plain', 'plain', 'bold'), size = c(8,8,10)),  
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1) 
+
+myvars <- colnames(data)[grepl("Q1_13_",colnames(data))]
+
+aux3 <- NULL
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("### Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  df <- data
+  df$myvar <- df[,j]
+  
+  aux2 <- df %>% group_by(myvar) %>% summarise(N = n()) %>% filter(!is.na(myvar)) %>% 
+            mutate(Service = j, P = N/sum(N), M = sum(myvar*N)/sum(N)) %>% select(Service, myvar, N, P, M)
+  
+  aux3 <- rbind(aux3,aux2)
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+  
+  cat("\n")
+  
+}
+
+```
+
+### Measures that had an effect: Graph
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+
+df <- aux3 %>% rename(value = myvar)
+
+df <- df %>% mutate(Service = str_to_sentence(gsub("Q1_13_|_rate","",Service)),
+                    Service = plyr::mapvalues(Service, c("Guidance", "Stskills", "Ltskills", 
+                                                         "Counseling", "Coaching",
+                                                         "Startup", "Reintegration", "Pss", "Other"), 
+                                                       c("Career guidance", "Short-term skills training", 
+                                                         "Long-term vocational and\ntechnical skills training",
+                                                         "Individual counseling", "Coaching or training\nduring a job fair", 
+                                                         "Support for the\nestablishment of a\nstart-up or entrepreneurship", 
+                                                         "Reintegration support",
+                                                         "Psychosocial\nsupport measures", "Other support")) ) 
+df$M_norm <- df$M/6
+
+color_scale <- (c("#129147", "#7EBB45", "#FDCB09", "#F58E20", "#EF4824", "#BC2029"))
+
+df$grad <- factor(df$value, levels = 6:1)
+
+df$P2 <- ifelse(df$P < 0.045, NA, df$P)
+
+df$Service <- factor(df$Service, levels = rev(c("Career guidance", "Short-term skills training", 
+                                                "Long-term vocational and\ntechnical skills training",
+                                                "Individual counseling", "Coaching or training\nduring a job fair", 
+                                                "Support for the\nestablishment of a\nstart-up or entrepreneurship", 
+                                                "Reintegration support",
+                                                "Psychosocial\nsupport measures", "Other support")))
+
+ggplot(df, aes(y = P, x = Service, fill = grad) ) + 
+    geom_bar(stat = "identity", width = 0.5, colour = "#a2a2a2", alpha = 0.8) +
+    geom_text(aes(label = scales::percent(P2, accuracy = 1)), 
+              position = position_stack(0.5), vjust = 0.5, hjust = 0.5, size = 3, color="#535353")+
+    geom_errorbar(aes(ymax = M_norm, ymin = M_norm),lwd = 2, color = "#535353")+
+    geom_label(aes(y = M_norm, label = formatC(round(M, 1), decimal.mark = ",")), 
+               vjust = 0.5, fill= "#535353", color ="white", fontface = "bold")+
+    theme_bw() + coord_flip() +
+    scale_fill_manual(values = color_scale, labels=c('6 Extremely effective', '5', '4', '3', '2', '1 No effect at all')) +
+    xlab("") + ylab("") +
+    theme(legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5)) 
+
+```
+
+## Change of employer
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_2))
+
+break.vars <- c("Migration","Gender","Q1_2")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=9, fig.width=10}
+
+aux <- viz.data(data, break.vars) %>% mutate(var1 = plyr::mapvalues(var1, c("No", "Yes, but for reasons unrelated to PME support measures", "Yes, directly due to the following PME support measures iden"), c("No", "Yes, but for reasons unrelated\nto PME support measures", "Yes, directly due to the\nfollowing PME support measures")))
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=2, fig.width=6}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T, flip = T)
+
+```
+
+### Change of employer: support did not contribute to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 0 & !is.na(Q1_2))
+
+break.vars <- c("Migration","Gender","Q1_2")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+
+```
+
+### Change of employer: support contributed to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_2))
+
+break.vars <- c("Migration","Gender","Q1_2")
+
+head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+
+```
+
+## Type of employment {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_3))
+
+myvars <- colnames(data)[grepl("Q1_4",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_3))
+
+myvars <- colnames(data)[grepl("Q1_4",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2.vertical(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+##  {.unnumbered .finaltab .unlisted .unnumbered}
+
+### Type of employment: support did not contribute to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 0 & !is.na(Q1_3))
+
+myvars <- colnames(data)[grepl("Q1_4",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+### Type of employment: support contributed to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_3))
+
+myvars <- colnames(data)[grepl("Q1_4",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+aux2 <- data.frame(Service = paste0("Q1_4_employm_stat__",1:8),
+Q1_4 = c("Permanent employee","Fixed-term employee",
+"Short-term employee","Employer",
+"Own account worker","Producers’ cooperative",
+"Family business","Worker not classifiable"))
+aux <- aux %>% left_join(aux2) %>%select(-Service) %>% rename(Service=Q1_4) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height= 4}
+
+ df <- aux %>% 
+    gather("var2",  "value", -1) %>% 
+    mutate(var3 = trimws(str_extract(var2, " Male| Female| Total"), which = "both"),
+           unit = str_extract(var2,"N.*"),
+           unit = ifelse(is.na(unit), "P", unit),
+           var2 = trimws(gsub("Male P|Female P|Total P|Male N|Female N|Total N", "", var2), which = "both" ),
+           var2 = plyr::mapvalues(var2, c("Local Population", "Migrants from GER", "Migrants from third countries"),  c("Local \nPopulation", "Migrants \nfrom GER", "Migrants from \nthird countries")),
+           value = as.numeric(gsub("%|,", "", value))) %>% 
+    relocate(unit, .before = value) %>% 
+    relocate(var3, .after = var2) %>% rename(var1 = Service) 
+
+
+aux <- df
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=8}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=9}
+
+df <- aux %>% filter(unit == "N", var3 != "Total", var2 == "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, flip = T, perc= T)
+ 
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "N", var3 == "Total", var2 != "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, c(7,1,3), flip = T, perc = T)
+
+```
+
+## Full time/part time emplyoment {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_5))
+  
+break.vars <- c("Migration","Gender","Q1_5")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_5))
+  
+break.vars <- c("Migration","Gender","Q1_5")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2.vertical(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+##  {.unnumbered .finaltab .unlisted .unnumbered}
+
+### Full time/part time emplyoment: support did not contribute to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 0 & !is.na(Q1_5))
+  
+break.vars <- c("Migration","Gender","Q1_5")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+### Full time/part time emplyoment: support contributed to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_5))
+
+break.vars <- c("Migration","Gender","Q1_5")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_5))
+
+break.vars <- c("Migration","Gender","Q1_5")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+aux <- viz.data(data, break.vars)
+aux$var1[grepl("\\(", aux$var1)] <- gsub("\\(", "\n\\(", aux$var1[grepl("\\(", aux$var1)])
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=7}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=8}
+
+df <- aux %>% filter(unit == "N", var3 != "Total", var2 == "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, flip = T, perc = T)
+ 
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=8}
+
+df <- aux %>% filter(unit == "N", var3 == "Total", var2 != "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, c(7,1,3), flip = T, perc = T)
+
+```
+
+## Sectors of employment {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_3))
+  
+break.vars <- c("Migration","Gender","Q1_3")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_3))
+  
+break.vars <- c("Migration","Gender","Q1_3")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2.vertical(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+##  {.unnumbered .finaltab .unlisted .unnumbered}
+
+### Sectors of employment: support did not contribute to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 0 & !is.na(Q1_3))
+  
+break.vars <- c("Migration","Gender","Q1_3")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+
+```
+
+### Sectors of employment: support contributed to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_3))
+
+break.vars <- c("Migration","Gender","Q1_3")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+aux <- viz.data(data, break.vars)
+aux$var1 <- gsub("\\s*\\([^\\)]+\\)","",aux$var1)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=8}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=9}
+
+df <- aux %>% filter(unit == "N", var3 != "Total", var2 == "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, flip = T, perc = T)
+ 
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=10}
+
+df <- aux %>% filter(unit == "N", var3 == "Total", var2 != "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, c(7,1,3), flip = T, perc = T)
+
+```
+
+## Income increased
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_6))
+  
+break.vars <- c("Migration","Gender","Q1_6")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+### Test of Statistical Significance
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+if(unique(sample$Country)[1] == "All"){
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_6))
+
+print("Migration Status")
+print(CrossTable(data$Migration, data$Q1_6, chisq = TRUE, format = "SPSS"))
+
+print("Gender")
+print(CrossTable(data$Gender, data$Q1_6, chisq = TRUE, format = "SPSS"))
+
+} else {
+  print("Only available for all countries")
+}
+
+```
+
+### Income increased: support did not contribute to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 0 & !is.na(Q1_6))
+  
+break.vars <- c("Migration","Gender","Q1_6")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+
+```
+
+### Income increased: support contributed to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_6))
+
+break.vars <- c("Migration","Gender","Q1_6")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+## Additional in-kind income
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & !is.na(Q1_7))
+  
+break.vars <- c("Migration","Gender","Q1_7")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+
+```
+
+### Additional in-kind income: support did not contribute to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 0 & !is.na(Q1_7))
+  
+break.vars <- c("Migration","Gender","Q1_7")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+
+```
+
+### Additional in-kind income: support contributed to finding employment
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q1_11 == 1 & Q1_12 == 1 & !is.na(Q1_7))
+
+break.vars <- c("Migration","Gender","Q1_7")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+# Start-up
+
+## Measures received to launch a business {.tabset}
+
+### By Gender
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q2_1_kit))
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+aux <- viz.data2(aux)
+aux$var1 <- gsub("Q2_1_","",aux$var1)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=3, fig.width=6}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% 
+  mutate(value = value/sum(value, na.rm = T),
+         var1 = plyr::mapvalues(var1 , c("startup_training", "kit", "financial", "coaching_startup", "other"),
+                                c("Start-up or\nentrepreneurship\ntraining", "Start-up kit", "Financial support\nstart-up", "Coaching at jobfair", "Other support")))
+
+
+bar.plot(df, 8, perc = T, flip = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=4, fig.width=7}
+
+df <- aux %>% filter(unit == "N", var3 != "Total", var2 == "Total") %>% group_by(var1) %>% 
+  mutate(value = value/sum(value, na.rm = T),
+         var1 = plyr::mapvalues(var1 , c("startup_training", "kit", "financial", "coaching_startup", "other"),
+                                c("Start-up or\nentrepreneurship\ntraining", "Start-up kit", "Financial support\nstart-up", "Coaching at jobfair", "Other support")))
+bar.plot(df, perc = T, flip = T)
+ 
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=4, fig.width=10}
+
+df <- aux %>% filter(unit == "N", var3 == "Total", var2 != "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% 
+  group_by(var1) %>% mutate(value = value/sum(value, na.rm = T),
+         var1 = plyr::mapvalues(var1 , c("startup_training", "kit", "financial", "coaching_startup", "other"),
+                                c("Start-up or\nentrepreneurship\ntraining", "Start-up kit", "Financial support\nstart-up", "Coaching at jobfair", "Other support")))
+bar.plot(df, c(7,1,3), perc = T, flip = T)
+
+```
+
+### By Question
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q2_1_kit))
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+## Average number of measures received to launch a business
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q2_1_kit))
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(key,value,myvars) %>% 
+        group_by_at(c("VAR00001",break.vars)) %>% 
+        summarise(Q2_1 = sum(value, na.rm = T))  
+
+aux <- data %>% group_by_at(break.vars) %>% summarise(N = sum(!is.na(Q2_1)), P = mean(Q2_1, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% mutate(Var = "Services received") %>% relocate(Var)
+
+head.mean.byMigrationandGender(aux)
+
+```
+
+## Rating of measures received to launch a business
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q2_1_kit))
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux01 <- data
+
+aux <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height = 3, fig.width = 8}
+
+df <- aux01 %>% 
+        group_by(value, Service) %>% 
+        summarize(N = n()) %>% 
+        ungroup() %>% 
+        group_by(Service)  %>% 
+        filter(!is.na(value)) %>%
+        mutate(M = sum(value*N)/sum(N),
+               P = N/sum(N),
+               Service = str_to_sentence(gsub("[0-9]|rate","",Service)),
+               Service = str_sub(Service, 4, nchar(Service)),
+               Service = str_to_sentence(gsub("_"," ",Service)),
+               Service = str_trim(Service, "right"))
+
+df$M_norm <- df$M/6
+
+color_scale <- c("#129147", "#7EBB45", "#FDCB09", "#F58E20", "#EF4824", "#BC2029")
+
+df$grad <- factor(df$value, levels = 6:1)
+
+df$P2 <- ifelse(df$P < 0.045, NA, df$P)
+
+df$Service <- plyr::mapvalues(df$Service, c("Startup training", "Kit", "Financial", "Coaching startup", "Other"),
+                              c("Start-up or\nentrepreneurship\ntraining", "Start-up kit", "Financial support\nstart-up", "Coaching at jobfair", "Other support"))
+
+df$Service <- factor(df$Service, levels = rev(c("Start-up or\nentrepreneurship\ntraining", "Start-up kit", "Financial support\nstart-up", "Coaching at jobfair", "Other support")))
+
+ggplot(df, aes(y = P, x = (Service), fill = grad) ) + 
+    geom_bar(stat = "identity", width = 0.5, colour = "#a2a2a2", alpha = 0.8) +
+    geom_text(aes(label = scales::percent(P2, accuracy = 1)), 
+              position = position_stack(0.5), vjust = 0.5, hjust = 0.5, size = 3, color="#535353")+
+    geom_errorbar(aes(ymax = M_norm, ymin = M_norm),lwd = 2, color = "#535353")+
+    geom_label(aes(y = M_norm, label =formatC( round(M, 1), decimal.mark = ",")), 
+               vjust = 0.5, fill= "#535353", color ="white", fontface = "bold")+
+    theme_bw() + coord_flip() +
+    scale_fill_manual(values = color_scale, labels = c('6 Extremly helpful', '5', '4', '3', '2', '1 Not helpfull at all')) +
+    xlab("") + ylab("") +
+    theme(legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          plot.title = element_text(hjust = 0.5))  
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(!is.na(Q2_1_kit))
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("### Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+
+  cat("\n")
+  
+}
+
+```
+
+## Start up created
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q2_2))
+
+break.vars <- c("Migration","Gender","Q2_2")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=10}
+
+aux <- viz.data(data, break.vars) %>% mutate(var1 = plyr::mapvalues(var1, c(0,1), c("No", "Yes"))) %>% na.omit()
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=2}
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=3}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df,perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=4}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df,  c(1,7,3), perc = T)
+
+```
+
+## Business still operating
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1)
+
+break.vars <- c("Migration","Gender","Q2_4")
+
+data <- data %>% mutate(Q2_4 = plyr::mapvalues(Q2_4, c(0,1,2), c("No", "Yes", "Uncertain")))
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=10}
+
+df <- viz.data(data,break.vars) %>% 
+    filter(var2 == "Total") %>% select(-var2) %>% filter(var3 != "Total") %>% 
+    spread(unit, value) %>% 
+    rename(category = var3,
+           fraction = P,
+           count = N) %>% ungroup() %>% 
+    mutate(label = paste0(category, "\n", scales::percent(fraction/10, accuracy = .1, decimal.mark = ",")), 
+           total = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(group.total = sum(count, na.rm = T), 
+           label2 =   paste0(var1, "\n", scales::percent(group.total/total, accuracy = .1, decimal.mark = ",")))
+  
+  aux <- df %>% group_by(var1, label2) %>% 
+    summarise(count = sum(count, na.rm = T))%>% 
+    ungroup %>% 
+    mutate(Tot = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(CUM = cumsum(ifelse(is.na(count), 0, count)), DomSize = max(CUM, na.rm = T))
+  aux <- finalize(aux)
+  
+  aux2 <- df %>% ungroup %>% select(var1, category, count, label) %>%
+    mutate(Tot = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(CUM = cumsum(ifelse(is.na(count), 0, count)), DomSize = max(CUM, na.rm = T))
+  aux2 <- finalize(aux2)
+  
+  aux$label2[aux$var1 == "Uncertain"] <- NA
+  aux2$label[aux2$var1 == "Uncertain"] <- NA
+  
+ ggplot() +
+    geom_col(data = aux, width = 1.8, aes(x = 1.7, y = count, fill = var1), color = "white", size=1)  +
+    geom_col(data = aux2,  width = 0.6, aes(x = 3, y = count, fill = var1, alpha = rev(category)), color = "white", size=1) +  
+    xlim(0, 3.5) + labs(x = NULL, y = NULL) +
+    geom_text( x = 1.5, aes(y=Pos, label=label2), colour = "#535353", data = aux ,size=3)  + 
+    geom_text( x = 3.8, aes(y=Pos, label=label), colour = "#535353", data = aux2 ,size=3)  + 
+    theme_bw()+
+    theme(legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          axis.text = element_blank(),
+          panel.grid = element_blank(),
+          axis.ticks = element_blank(),
+          panel.border = element_blank()) +
+    scale_fill_manual(values = ccPalette[c(1,3,7)]) + 
+    labs(title = "") + 
+    coord_polar(theta="y")+
+    scale_alpha_discrete(range = c(0.6,1)) +
+    guides(alpha = "none")
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=3}
+aux <- viz.data(data, break.vars)
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=4}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var3)  %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=5}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df,  c(1,7,3), perc = T)
+
+```
+
+### Business still operating: Measures received to launch a business
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- NULL
+
+for (j in myvars) {
+  
+  data$myvar <- data[,j]
+  data$myvar <- ifelse(data$myvar > 0, 1, 0)
+  
+  break.vars1 <- c(break.vars,"myvar")
+  
+  aux2 <- freq.tables.byVar1and2(data,break.vars1) %>% filter(myvar == 1) %>% ungroup()
+  aux2$Service <- j
+  
+  aux <- rbind(aux,aux2)
+  
+}
+
+aux <- aux %>% select(-myvar) %>% relocate(Service)
+
+head.freq.byMigrationandGender(aux)
+
+```
+
+### Business still operating: Rate of measures received to launch a business
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+  
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & grepl("_rate",colnames(data))]
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("#### Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+
+  cat("\n")
+  
+}
+
+```
+
+### Business still operating: Average number of measures received to launch a business
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & !grepl("rate|spec",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(key,value,myvars) %>% 
+        group_by_at(c("VAR00001",break.vars)) %>% 
+        summarise(Q2_1 = sum(value, na.rm = T))  
+
+aux <- data %>% group_by_at(break.vars) %>% summarise(N = sum(!is.na(Q2_1)), P = mean(Q2_1, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% mutate(Var = "Services received") %>% relocate(Var)
+
+head.mean.byMigrationandGender(aux)
+
+```
+
+### Business still operating: Rating of measures received to launch a business
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & grepl("_rate",colnames(data))]
+  
+break.vars <- c("Migration","Gender")
+
+aux <- data %>% mutate(Gender = "Total")
+aux2 <- data %>% rbind(aux) %>% mutate(Migration = "Total")
+
+data <- data %>% rbind(aux) %>% rbind(aux2) %>% select_at(c("VAR00001",break.vars,myvars)) %>% 
+        gather(Service,value,myvars)
+
+aux <- data %>% group_by_at(c(break.vars,"Service")) %>% summarise(N = sum(!is.na(value)), P = mean(value, na.rm = T)) %>% ungroup()
+aux$N[aux$N == 0] <- NA
+
+aux <- aux %>% mutate(Gender =  factor(Gender, levels = c(L.Gender, "Total")), Migration = factor(Migration, levels = c(L.Migration, "Total"))) %>% complete( !!! rlang::syms(as.list(break.vars)))
+
+aux <- aux %>% gather(key, value, N:P) %>% unite(variable,c(break.vars,"key"), sep = " ") %>% spread(variable,value) %>% filter(!is.na(Service))
+
+head.mean.byMigrationandGender(aux)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, results='asis'}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+myvars <- colnames(data)[grepl("Q2_1_",colnames(data)) & grepl("_rate",colnames(data))]
+
+for (j in myvars) {
+  
+  break.vars <- c("Migration","Gender",j)
+  
+  cat("\n")
+  cat("#### Rating of services received: ",  j)
+  cat("\n")
+  
+  aux <- freq.tables.byVar1and2(data,break.vars) %>% filter_at(j, all_vars(!is.na(.)))
+  
+  if(nrow(aux) > 0){
+    head.freq.byMigrationandGender(aux) %>% 
+      htmltools::HTML() %>% 
+      print
+  } else {
+    print("No data")
+  }
+
+  cat("\n")
+  
+}
+
+```
+
+### Business still operating: Duration that the start-up has been operating
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+break.vars <- c("Migration","Gender","Q2_5")
+
+data <- data %>% mutate(Q2_5 = plyr::mapvalues(Q2_5, c(1,2,3), c("Less than\n 3 months", "Between 3\n and 6 months", "More than\n 6 months")))
+
+data$Q2_5 <- factor(data$Q2_5, levels = c("Less than\n 3 months", "Between 3\n and 6 months", "More than\n 6 months"))
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.height=7, fig.width=8}
+
+df <- viz.data(data,break.vars) %>% 
+    filter(var2 == "Total") %>% select(-var2) %>% filter(var3 != "Total") %>% 
+    spread(unit, value) %>% 
+    rename(category = var3,
+           fraction = P,
+           count = N) %>% ungroup() %>% 
+    mutate(label = paste0(category, "\n", scales::percent(fraction/10, accuracy = .1, decimal.mark = ",")), 
+           total = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(group.total = sum(count, na.rm = T), 
+           label2 =   paste0(var1, "\n", scales::percent(group.total/total, accuracy = .1, decimal.mark = ",")))
+  
+  aux <- df %>% group_by(var1, label2) %>% 
+    summarise(count = sum(count, na.rm = T))%>% 
+    ungroup %>% 
+    mutate(Tot = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(CUM = cumsum(ifelse(is.na(count), 0, count)), DomSize = max(CUM, na.rm = T))
+  aux <- finalize(aux)
+  
+  aux2 <- df %>% ungroup %>% select(var1, category, count, label) %>%
+    mutate(Tot = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(CUM = cumsum(ifelse(is.na(count), 0, count)), DomSize = max(CUM, na.rm = T))
+  aux2 <- finalize(aux2)
+  
+  aux$label2[aux$var1 == "Uncertain"] <- NA
+  aux2$label[aux2$var1 == "Uncertain"] <- NA
+  
+ ggplot() +
+    geom_col(data = aux, width = 1.8, aes(x = 1.7, y = count, fill = var1), color = "white", size=1)  +
+    geom_col(data = aux2,  width = 0.6, aes(x = 3, y = count, fill = var1, alpha = rev(category)), color = "white", size=1) +  
+    xlim(0, 3.5) + labs(x = NULL, y = NULL) +
+    geom_text( x = 1.5, aes(y=Pos, label=label2), colour = "#535353", data = aux ,size=3)  + 
+    geom_text( x = 3.8, aes(y=Pos, label=label), colour = "#535353", data = aux2 ,size=3)  + 
+    theme_bw()+
+    theme(legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          axis.text = element_blank(),
+          panel.grid = element_blank(),
+          axis.ticks = element_blank(),
+          panel.border = element_blank()) +
+    scale_fill_manual(values = ccPalette[c(1,3,7)]) + 
+    labs(title = "") + 
+    coord_polar(theta="y")+
+    scale_alpha_discrete(range = c(0.6,1)) +
+    guides(alpha = "none")
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,fig.width=10}
+
+aux <- viz.data(data, break.vars)
+aux$var1 <- factor(aux$var1, levels = c("Less than\n 3 months", "Between 3\n and 6 months", "More than\n 6 months"))
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=6, fig.height=2}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T, flip = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=8, fig.height=3}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, perc = T, flip = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=8, fig.height=3}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total")%>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df,  c(1,7,3), perc = T, flip = T)
+
+```
+
+### Business still operating: Number of employees of start-ups that are still operating
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+break.vars <- c("Migration","Gender","Q2_6")
+
+data <- data %>% mutate(Q2_6 = plyr::mapvalues(Q2_6, c(1:5), c("Selfemployed without employees", "1 - 9 people", "10 - 19 people", "20 - 49 people", "50 people or more")))
+
+data$Q2_6 <- factor(data$Q2_6, levels = c("Selfemployed without employees", "1 - 9 people", "10 - 19 people", "20 - 49 people", "50 people or more"))
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=8}
+
+aux <- viz.data(data, break.vars)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=8}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=9}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+
+df$var1 <- factor(df$var1, levels = c("Selfemployed without employees", "1 - 9 people", "10 - 19 people", "20 - 49 people", "50 people or more"))
+
+bar.plot(df, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=10}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+
+bar.plot(df,  c(1,7,3),flip = T, perc = T)
+```
+
+### Business still operating: Income high enough to generate a living
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+break.vars <- c("Migration","Gender","Q2_7")
+
+
+data <- data %>% mutate(Q2_7 = plyr::mapvalues(Q2_7, c(0,1,2), c("No", "Yes", "Uncertain")))
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+#### Test of Statistical Significance
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+if(unique(sample$Country)[1] == "All"){
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+print("Migration Status")
+print(CrossTable(data$Migration, data$Q2_7, chisq = TRUE, format = "SPSS"))
+
+print("Gender")
+print(CrossTable(data$Gender, data$Q2_7, chisq = TRUE, format = "SPSS"))
+
+} else {
+  print("Only available for all countries")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+break.vars <- c("Migration","Gender","Q2_7")
+
+data <- data %>% mutate(Q2_7 = plyr::mapvalues(Q2_7, c(0,1,2), c("No", "Yes", "Uncertain")))
+
+df <- viz.data(data,break.vars) %>% 
+    filter(var2 == "Total") %>% select(-var2) %>% filter(var3 != "Total") %>% 
+    spread(unit, value) %>% 
+    rename(category = var3,
+           fraction = P,
+           count = N) %>% ungroup() %>% 
+    mutate(label = paste0(category, "\n", scales::percent(fraction/10, accuracy = .1, decimal.mark = ",")), 
+           total = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(group.total = sum(count, na.rm = T), 
+           label2 =   paste0(var1, "\n", scales::percent(group.total/total, accuracy = .1, decimal.mark = ",")))
+  
+  aux <- df %>% group_by(var1, label2) %>% 
+    summarise(count = sum(count, na.rm = T))%>% 
+    ungroup %>% 
+    mutate(Tot = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(CUM = cumsum(ifelse(is.na(count), 0, count)), DomSize = max(CUM, na.rm = T))
+  aux <- finalize(aux)
+  
+  aux2 <- df %>% ungroup %>% select(var1, category, count, label) %>%
+    mutate(Tot = sum(count, na.rm = T)) %>% 
+    group_by(var1) %>% 
+    mutate(CUM = cumsum(ifelse(is.na(count), 0, count)), DomSize = max(CUM, na.rm = T))
+  aux2 <- finalize(aux2)
+
+  aux2$label[aux2$var1 == "Uncertain"] <- NA
+  
+ ggplot() +
+    geom_col(data = aux, width = 1.8, aes(x = 1.7, y = count, fill = var1), color = "white", size=1)  +
+    geom_col(data = aux2,  width = 0.6, aes(x = 3, y = count, fill = var1, alpha = rev(category)), color = "white", size=1) +  
+    xlim(0, 3.5) + labs(x = NULL, y = NULL) +
+    geom_text( x = 1.5, aes(y=Pos, label=label2), colour = "#535353", data = aux ,size=3)  + 
+    geom_text( x = 3.8, aes(y=Pos, label=label), colour = "#535353", data = aux2 ,size=3)  + 
+    theme_bw()+
+    theme(legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          axis.text = element_blank(),
+          panel.grid = element_blank(),
+          axis.ticks = element_blank(),
+          panel.border = element_blank()) +
+    scale_fill_manual(values = ccPalette[c(1,3,7)]) + 
+    labs(title = "") + 
+    coord_polar(theta="y")+
+    scale_alpha_discrete(range = c(0.6,1)) +
+    guides(alpha = "none")
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=10}
+
+aux <- viz.data(data, break.vars)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=3}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, 8, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=4}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+bar.plot(df, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=5}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2)  %>% mutate(var2 = "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+
+bar.plot(df,  c(1,7,3), perc = T)
+```
+
+### Business still operating: Sectors in which start-up was created
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(Q2_2 == 1 & Q2_4 == 1)
+
+break.vars <- c("Migration","Gender","Q1_3")
+
+if(nrow(data) > 0){
+  head.freq.byMigrationandGender(freq.tables.byVar1and2(data,break.vars))
+} else {
+  print("No data")
+}
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,fig.height=9, fig.width=10}
+
+aux <- viz.data(data, break.vars)
+aux$var1[aux$var1 == "Manufacturing or extraction (i.e. mining)"] <- "Manufacturing or extraction"
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE,  fig.width=8}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 == "Total") %>% group_by(var3) %>% mutate(value = value/sum(value, na.rm = T))
+
+bar.plot(df, 8, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=9}
+
+df <- aux %>% filter(unit == "N", var2 == "Total", var3 != "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+
+bar.plot(df, flip = T, perc = T)
+
+```
+
+```{r, echo = F, warning = FALSE, message = FALSE, fig.width=10}
+
+df <- aux %>% filter(unit == "N", var2 != "Total", var3 == "Total") %>% select(-var3) %>% rename(var3 = var2) %>% mutate(var2 = "Total") %>% mutate(var2 = "Total") %>% group_by(var1) %>% mutate(value = value/sum(value, na.rm = T))
+
+bar.plot(df,  c(1,7,3),flip = T, perc = T)
+
+```
+
+## Reasons why establishment of business was not successful
+
+```{r, echo = F, warning = FALSE, message = FALSE}
+
+data <- sample %>% filter(!is.na(Q2_3))
+
+break.vars <- c("Migration","Gender","Q2_3")
+
+get_worldcloud(data$Q2_3, "english")
+kbl(data %>% group_by_at(break.vars) %>% summarise(n = n()) %>% filter(!(is.na(Q2_3))) %>% arrange(Migration, Gender, -n)) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
